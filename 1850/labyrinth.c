@@ -34,18 +34,31 @@ typedef Fila *p_fila;
 
 // Dados do bfs para cada vertice
 typedef struct {
-    int visitado;
-    int d;
+    int *visitado;
+    int *dist;
+    int A, B, C, D, E, F, G;
 } Data;
 typedef Data *p_data;
 
-void marcar_visitado(p_data *data, int vertice, int d_u) {
-    data[vertice]->visitado = 1;
-    data[vertice]->d = d_u + 1;
+void inicializa_data(p_data data, int tamanho) {
+    data->A = 0; data->B = 0; data->C = 0;
+    data->D = 0; data->E = 0; data->F = 0;
+    data->G = 0;
+    data->visitado = malloc(tamanho*sizeof(int));
+    data->dist = malloc(tamanho*sizeof(int));
+    for (int i=0; i<tamanho; i++) {
+        data->visitado[i] = 0;
+        data->dist[i] = -1;
+    }
 }
 
-int esta_visitado(p_data *data, int vertice) {
-    return data[vertice]->visitado;
+void marcar_visitado(p_data data, int vertice, int d_u) {
+    data->visitado[vertice] = 1;
+    data->dist[vertice] = d_u + 1;
+}
+
+int esta_visitado(p_data data, int vertice) {
+    return data->visitado[vertice];
 }
 
 void adicionar_a_fila(p_fila fila, int vertice) {
@@ -73,10 +86,34 @@ int remover_da_fila(p_fila fila) {
     return v;
 }
 
-void imprime_dados(p_data *data, int n, int cols) {
+int caminho_livre(p_data data, char adj) {
+    int status = 1;
+
+    // Coletar a chave
+    if (adj == 'a') data->A = 1;
+    else if (adj == 'b') data->B = 1;
+    else if (adj == 'c') data->C = 1;
+    else if (adj == 'd') data->D = 1;
+    else if (adj == 'e') data->E = 1;
+    else if (adj == 'f') data->F = 1;
+    else if (adj == 'g') data->G = 1;
+
+    // Verificar portas
+    // if (adj == 'A' && !data->A) status = 0;
+    // else if (adj == 'B' && !data->B) status = 0;
+    // else if (adj == 'C' && !data->C) status = 0;
+    // else if (adj == 'D' && !data->D) status = 0;
+    // else if (adj == 'E' && !data->E) status = 0;
+    // else if (adj == 'F' && !data->F) status = 0;
+    // else if (adj == 'G' && !data->G) status = 0;
+    
+    return status;
+}
+
+void imprime_dados(p_data data, int n, int cols) {
     for (int i=0; i<n; i++) {
         if (i%cols == 0) printf("\n");
-        printf("%d", data[i]->d);
+        printf("%2d ", data->dist[i]);
     }
     printf("\n");
 }
@@ -87,15 +124,12 @@ void bfs(p_grafo grafo, int vertice_inicial) {
     p_fila fila;
     fila = malloc(sizeof(Fila));
     fila->ini = NULL; fila->fim = NULL;
-    p_data data[tamanho];
-    for (int i=0; i<tamanho; i++) {
-        data[i] = malloc(sizeof(Data));
-        data[i]->visitado = 0;
-        data[i]->d = -1;
-    }
+    p_data data;
+    data = malloc(sizeof(Data));
+    inicializa_data(data, tamanho);
 
     // Marca o vértice inicial como visitado
-    marcar_visitado(data, vertice_inicial, data[vertice_inicial]->d);
+    marcar_visitado(data, vertice_inicial, data->dist[vertice_inicial]);
     adicionar_a_fila(fila, vertice_inicial);
 
     // Enquanto a fila não estiver vazia
@@ -108,8 +142,10 @@ void bfs(p_grafo grafo, int vertice_inicial) {
 
         // Adiciona os vértices adjacentes não visitados à fila
         for (p_lista adjacente = grafo->vertices[vertice]; adjacente != NULL; adjacente = adjacente->prox) {
-            if (!esta_visitado(data, adjacente->vertice)) {
-                marcar_visitado(data, adjacente->vertice, data[vertice]->d);
+            char adj = grafo->vertices[adjacente->vertice]->me;
+            // printf("%c ", adj);
+            if (!esta_visitado(data, adjacente->vertice) && adj != '#' && caminho_livre(data, adj)) {
+                marcar_visitado(data, adjacente->vertice, data->dist[vertice]);
                 adicionar_a_fila(fila, adjacente->vertice);
             }
         }
@@ -122,7 +158,7 @@ int main() {
     char maze[100][101]; // Assumindo que o tamanho máximo é 100x100 com um caractere de nova linha no final de cada linha
     int rows = 0;
     int cols = 0;
-    int tamanho, vizinhos[4], vertice_inicial;
+    int tamanho, vizinhos[4], vertice_inicial, vertice_final;
     p_grafo grafo;
     grafo = malloc(sizeof(Grafo));
 
@@ -149,6 +185,7 @@ int main() {
     grafo->m = cols;
     tamanho = rows*cols;
     vertice_inicial = -1;
+    vertice_final = -1;
     grafo->vertices = malloc(tamanho*sizeof(p_lista));
     for (int i=0; i<tamanho; i++) grafo->vertices[i] = NULL;
 
@@ -178,12 +215,13 @@ int main() {
                     vertice_aux->prox = vertice;
                 }
                 if (vertice->me == '@') vertice_inicial = i;
+                else if (vertice->me == '*') vertice_final = i;
             }
         }
         // printf("\n");
     }
 
-    printf("Vertice inial é %d\n", vertice_inicial);
+    printf("Vertice inicial é %d, e o final é %d\n", vertice_inicial, vertice_final);
     // Imprime valor, pode apagar
     // int aux = 2;
     // p_lista vertice_aux;
